@@ -2,7 +2,7 @@
 /**
  * Plugin Name: H2 Backup API
  * Description: Provides a REST API for SQL dump, wp-content index, and wp-content file download protected by a bearer token.
- * Version: 1.0.2
+ * Version: 1.0.3
  * Author: Henrik Hansen
  * Text Domain: h2_backup_api_plugin
  * Update URI: h2_backup_api_plugin
@@ -199,7 +199,7 @@ class Backup_API_Plugin
         }
 
         $filename = 'backup-' . gmdate('Y-m-d-His') . '.sql.gz';
-        return $this->stream_text_response($gz_dump, $filename, 'application/gzip');
+        $this->send_binary_response_and_exit($gz_dump, $filename, 'application/gzip');
     }
 
     private function escape_sql_value($value)
@@ -260,25 +260,57 @@ class Backup_API_Plugin
         $mime = wp_check_filetype($full);
         $filename = basename($full);
 
-        return $this->stream_file_response($full, $filename, $mime['type'] ?: 'application/octet-stream');
+        $this->send_file_response_and_exit($full, $filename, $mime['type'] ?: 'application/octet-stream');
     }
 
-    private function stream_text_response($content, $filename, $content_type)
+    private function send_binary_response_and_exit($content, $filename, $content_type)
     {
-        $response = new WP_REST_Response($content, 200);
-        $response->header('Content-Type', $content_type);
-        $response->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
-        return $response;
+        $content_disposition = $this->build_content_disposition($filename);
+        if (!headers_sent()) {
+            status_header(200);
+            nocache_headers();
+            header('Content-Type: ' . $content_type);
+            header('Content-Disposition: ' . $content_disposition);
+            header('Content-Location: ' . $this->get_content_location($filename));
+            header('Content-Length: ' . strlen($content));
+        }
+
+        echo $content;
+        exit;
     }
 
-    private function stream_file_response($path, $filename, $content_type)
+    private function send_file_response_and_exit($path, $filename, $content_type)
     {
-        $response = new WP_REST_Response(null, 200);
-        $response->header('Content-Type', $content_type);
-        $response->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
-        $response->header('Content-Length', (string) filesize($path));
-        $response->set_data(file_get_contents($path));
-        return $response;
+        $content_disposition = $this->build_content_disposition($filename);
+        if (!headers_sent()) {
+            status_header(200);
+            nocache_headers();
+            header('Content-Type: ' . $content_type);
+            header('Content-Disposition: ' . $content_disposition);
+            header('Content-Location: ' . $this->get_content_location($filename));
+            header('Content-Length: ' . (string) filesize($path));
+        }
+
+        readfile($path);
+        exit;
+    }
+
+    private function build_content_disposition($filename)
+    {
+        $fallback = sanitize_file_name($filename);
+        if ($fallback === '') {
+            $fallback = 'download';
+        }
+
+        $utf8 = rawurlencode($filename);
+
+        return 'attachment; filename="' . $fallback . '"; filename*=UTF-8\'\'' . $utf8;
+    }
+
+    private function get_content_location($filename)
+    {
+        $fallback = sanitize_file_name($filename);
+        return $fallback !== '' ? $fallback : 'download';
     }
 }
 
