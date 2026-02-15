@@ -2,7 +2,7 @@
 /**
  * Plugin Name: H2 Backup API
  * Description: Provides a REST API for SQL dump, wp-content index, and wp-content file download protected by a bearer token.
- * Version: 1.0.0
+ * Version: 1.0.2
  * Author: Henrik Hansen
  * Text Domain: h2_backup_api_plugin
  * Update URI: h2_backup_api_plugin
