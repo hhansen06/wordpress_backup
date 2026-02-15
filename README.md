@@ -147,10 +147,6 @@ openssl rand -base64 32
 - Einzelner Datei-Download
 - Bearer-Token-Authentifizierung
 
-## 👤 Autor
-
-**Henrik Hansen**
-
 ## 📄 Lizenz
 
 Dieses Projekt kann frei verwendet werden. Bitte beachten Sie, dass Sie es auf eigene Verantwortung einsetzen.
