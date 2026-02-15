@@ -1,0 +1,34 @@
+name: Create Release ZIP
+
+on:
+  release:
+    types: [created, published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Get release version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      
+      - name: Create plugin directory structure
+        run: |
+          mkdir -p h2-backup-api
+          cp backup.php h2-backup-api/
+          cp README.md h2-backup-api/
+      
+      - name: Create ZIP file
+        run: |
+          zip -r h2-backup-api-${{ steps.version.outputs.VERSION }}.zip h2-backup-api/
+      
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: h2-backup-api-${{ steps.version.outputs.VERSION }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
